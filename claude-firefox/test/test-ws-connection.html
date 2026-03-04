@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head><title>WebSocket Test</title></head>
+<body>
+<h1>WebSocket Connection Test</h1>
+<pre id="log" style="font-size:14px; background:#111; color:#0f0; padding:20px; min-height:400px;"></pre>
+<script>
+const log = document.getElementById('log');
+function addLog(msg) { log.textContent += msg + '\n'; }
+
+const secret = '9d7ac6cd758952659166f825a29e4452d2a96440a272ef2409660548ea3f6864';
+addLog('Connecting to ws://localhost:7865...');
+
+const ws = new WebSocket('ws://127.0.0.1:7865');
+ws.onopen = () => {
+  addLog('Connected!');
+  addLog('Sending auth...');
+  ws.send(JSON.stringify({ id: 'test-auth', type: 'auth', params: { secret } }));
+};
+ws.onmessage = (e) => {
+  addLog('Response: ' + e.data);
+};
+ws.onerror = (e) => {
+  addLog('ERROR: Connection failed. Is the server running?');
+};
+ws.onclose = (e) => {
+  addLog('Closed: code=' + e.code);
+};
+</script>
+</body>
+</html>

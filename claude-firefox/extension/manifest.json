@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Claude Browser Bridge",
+  "version": "1.0.0",
+  "description": "Lets Claude automate browser tabs via MCP",
+  "permissions": ["tabs", "activeTab", "storage", "nativeMessaging", "scripting", "webRequest"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "scripts": ["background.js"],
+    "type": "module"
+  },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content/accessibility.js", "content/interaction.js", "content/content-script.js"],
+    "run_at": "document_idle"
+  }],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "48": "icons/icon.svg"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; connect-src 'self' http://127.0.0.1:* http://localhost:*; object-src 'self';"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "claude-browser-bridge@elliot18"
+    }
+  },
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  }
+}

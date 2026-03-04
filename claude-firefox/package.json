@@ -1,0 +1,21 @@
+{
+  "name": "claude-firefox-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Claude browser automation via Firefox extension",
+  "type": "module",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node build/index.js",
+    "generate-secret": "node scripts/generate-secret.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

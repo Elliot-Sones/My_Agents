@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "claude-firefox": {
+      "command": "node",
+      "args": ["build/index.js"],
+      "cwd": "/Users/elliot18/Desktop/Home/Projects/claude-firefox"
+    }
+  }
+}
