@@ -26,7 +26,7 @@ The focus is on agents that solve actual problems — not toy demos. Every agent
 | Agent | Description | Status |
 |-------|-------------|--------|
 | [**claude-firefox**](./claude-firefox) | Firefox browser automation via MCP. Enriched accessibility tree, stable element refs, snapshot caching, 28 tools. | Available |
-| *Research Agent* | Multi-source research across Perplexity, Wikipedia, and more. | Planned |
+| [**research-agent**](./research-agent) | Multi-source research with LLM-powered evaluation. Papers, code, opinions, cross-validation, 18 tools. | Available |
 | *Web Monitor* | Track page changes and get alerts. | Planned |
 
 ## Architecture
@@ -45,9 +45,9 @@ The focus is on agents that solve actual problems — not toy demos. Every agent
 ┌──────────────▼──────────────────────┐
 │          MCP Servers                │
 │  ┌───────────┐  ┌────────────────┐  │
-│  │  Firefox   │  │  Future agents │  │
-│  │  Browser   │  │  (research,    │  │
-│  │  Automation│  │   monitoring)  │  │
+│  │  Firefox   │  │   Research     │  │
+│  │  Browser   │  │   Agent        │  │
+│  │  Automation│  │   (18 tools)   │  │
 │  └───────────┘  └────────────────┘  │
 └─────────────────────────────────────┘
 ```

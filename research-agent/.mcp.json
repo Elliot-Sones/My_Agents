@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "research-agent": {
+      "command": "node",
+      "args": ["build/index.js"],
+      "env": {
+        "ANTHROPIC_API_KEY": "",
+        "EXA_API_KEY": "",
+        "PERPLEXITY_API_KEY": "",
+        "XAI_API_KEY": "",
+        "SEMANTIC_SCHOLAR_API_KEY": "",
+        "GITHUB_TOKEN": "",
+        "KIMI_API_KEY": "",
+        "EVAL_MODEL": "haiku",
+        "RESEARCH_BUDGET": "1.00"
+      }
+    }
+  }
+}
