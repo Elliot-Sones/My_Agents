@@ -1,4 +1,4 @@
-# Research Agent MCP Server
+# research-agent
 
 Multi-source research MCP server with gap analysis and self-improving memory. Claude drives the loop — decomposing queries, searching across academic papers, code repos, and community discussions, evaluating findings, and synthesizing results.
 

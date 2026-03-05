@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>A collection of autonomous AI agents built on the Model Context Protocol (MCP)</strong>
+  <strong>A collection of production-grade AI agents built on the Model Context Protocol (MCP)</strong>
 </p>
 
 <p align="center">
@@ -17,59 +17,55 @@
 
 ## About
 
-This repository contains production-grade AI agents designed to automate real workflows. Each agent connects to external tools via MCP servers and uses the Claude API to reason, plan, and act autonomously.
+Production-grade MCP servers that give Claude real capabilities — browser automation, deep research, macOS desktop control, and web page monitoring. Each server is built to handle real-world conditions: dynamic content, auth flows, background processes, and failure recovery.
 
-The focus is on agents that solve actual problems — not toy demos. Every agent here has been tested against real websites and real-world conditions, including background tab throttling, dynamic content loading, and complex multi-step interactions.
+The focus is on agents that solve actual problems, not toy demos.
 
 ## Agents
 
-| Agent | Description | Status |
-|-------|-------------|--------|
-| [**claude-firefox**](./claude-firefox) | Firefox browser automation via MCP. Enriched accessibility tree, stable element refs, snapshot caching, 29 tools. | Available |
-| [**research-agent**](./research-agent) | Multi-source research with LLM-powered evaluation. Papers, code, opinions, cross-validation, 18 tools. | Available |
-| *Web Monitor* | Track page changes and get alerts. | Planned |
+| Agent | Tools | Description |
+|-------|:-----:|-------------|
+| [**claude-firefox**](./claude-firefox) | 29 | Firefox browser automation. Enriched accessibility tree, stable element refs, snapshot caching. 96% benchmark score. |
+| [**research-agent**](./research-agent) | 18 | Multi-source research with LLM evaluation. Academic papers, code search, community opinions, cross-validation. |
+| [**claude-macos**](./claude-macos) | 23 | macOS desktop automation. Mouse/keyboard input, accessibility API, window management, screenshots, AppleScript. |
+| [**web-monitor**](./web-monitor) | 5 | Web page change monitoring. Hash-based diff detection, CSS selector scoping, persistent background polling. |
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────┐
-│           Claude API                │
-│     (reasoning + tool selection)    │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│          MCP Protocol               │
-│    (standardized tool interface)    │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│          MCP Servers                │
-│  ┌───────────┐  ┌────────────────┐  │
-│  │  Firefox   │  │   Research     │  │
-│  │  Browser   │  │   Agent        │  │
-│  │  Automation│  │   (18 tools)   │  │
-│  └───────────┘  └────────────────┘  │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                         Claude API                           │
+│                  (reasoning + tool selection)                │
+└────────────┬──────────────┬──────────────┬───────────────────┘
+             │              │              │              │
+     MCP Protocol    MCP Protocol   MCP Protocol   MCP Protocol
+             │              │              │              │
+    ┌────────▼─────┐ ┌──────▼──────┐ ┌────▼────────┐ ┌──▼──────────┐
+    │   Firefox    │ │  Research   │ │   macOS     │ │    Web      │
+    │  Automation  │ │   Agent     │ │ Automation  │ │   Monitor   │
+    │  (29 tools)  │ │ (18 tools)  │ │ (23 tools)  │ │  (5 tools)  │
+    └──────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
 ```
 
-Each agent is an MCP server that exposes tools. Any MCP-compatible client (Claude Code, custom scripts, or the Claude API directly) can connect and use them.
+Each agent is a self-contained MCP server. Any MCP-compatible client — Claude Code, the Claude API directly, or custom scripts — can connect and use them independently or together.
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Firefox (for browser automation agents)
+- Firefox (for `claude-firefox`)
+- macOS 12+ (for `claude-macos`)
 
 ### Install an agent
 
-Each agent has its own directory with setup instructions. For example:
-
 ```bash
-cd claude-firefox
+cd claude-firefox   # or research-agent, claude-macos, web-monitor
 npm install
 npm run build
 ```
+
+Each agent directory has a `.mcp.json` you can reference, plus a full README with setup details.
 
 ### Use with Claude Code
 
@@ -81,6 +77,18 @@ Add to your Claude Code MCP config:
     "firefox": {
       "command": "node",
       "args": ["/path/to/claude-firefox/build/index.js"]
+    },
+    "research": {
+      "command": "node",
+      "args": ["/path/to/research-agent/build/index.js"]
+    },
+    "macos": {
+      "command": "node",
+      "args": ["/path/to/claude-macos/build/index.js"]
+    },
+    "web-monitor": {
+      "command": "node",
+      "args": ["/path/to/web-monitor/build/index.js"]
     }
   }
 }
@@ -93,7 +101,6 @@ import Anthropic from "@anthropic-ai/sdk";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-// Connect to the MCP server
 const transport = new StdioClientTransport({
   command: "node",
   args: ["./claude-firefox/build/index.js"]
@@ -101,10 +108,8 @@ const transport = new StdioClientTransport({
 const mcp = new Client({ name: "my-agent", version: "1.0.0" });
 await mcp.connect(transport);
 
-// List available tools
 const { tools } = await mcp.listTools();
 
-// Use with Claude API
 const client = new Anthropic();
 const response = await client.messages.create({
   model: "claude-sonnet-4-6",
@@ -120,17 +125,16 @@ const response = await client.messages.create({
 
 ## Performance
 
-The Firefox MCP server scores **96% (55/57)** on our comprehensive benchmark covering navigation, form filling, AJAX handling, caching, keyboard simulation, and real-world sites (Wikipedia, GitHub, NPM, Hacker News, DuckDuckGo).
+The Firefox MCP server scores **96% (55/57)** on a comprehensive benchmark covering navigation, form filling, AJAX handling, snapshot caching, keyboard simulation, and real-world sites.
 
-| Metric | Firefox MCP | Chrome MCP (Claude Code built-in) |
-|--------|------------|-----------------------------------|
+| Metric | claude-firefox | Chrome MCP (Claude Code built-in) |
+|--------|:--------------:|:---------------------------------:|
 | Benchmark score | 55/57 (96%) | 50/52 (96%) |
 | Wall time | ~60s | ~13 min |
-| Tool calls | Direct (no LLM overhead) | 1 LLM turn per call |
-| Accessibility tree | Enriched (colors, fonts, bboxes, regions) | Basic |
-| Snapshot caching | Fingerprint-based, ~0ms repeat reads | None |
+| Accessibility tree | Enriched (colors, fonts, bboxes) | Basic |
+| Snapshot caching | Fingerprint-based, ~0ms repeats | None |
 | Stale ref detection | Yes | No |
-| Client requirement | Any Node.js MCP client | Claude Code runtime only |
+| Client requirement | Any MCP client | Claude Code only |
 
 ## License
 

@@ -2,7 +2,15 @@
 
 Firefox browser automation via the Model Context Protocol (MCP).
 
-This is the core MCP server that powers the browser automation agents in this repository. It provides 29 tools for navigating, clicking, typing, extracting content, and interacting with any website through Firefox.
+29 tools for navigating, clicking, typing, extracting content, and interacting with any website. Connects to Firefox through a native messaging extension, giving it direct access to the browser's JavaScript engine and accessibility tree.
+
+## How It Works
+
+```
+MCP Client → MCP Server (Node.js) → Unix Socket → Native Host → Firefox Extension → Page
+```
+
+The extension runs inside Firefox with full page access. The MCP server communicates with it over a Unix socket via the native messaging host. This means tool calls are direct — no screenshot parsing, no coordinate guessing.
 
 ## Features
 
@@ -45,7 +53,7 @@ node build/index.js
 
 The server starts, listens on a Unix socket, and waits for the Firefox extension to connect.
 
-## Client-Agnostic MCP Setup (Codex or Claude)
+## MCP Configuration
 
 Use the same MCP server definition in either client:
 
