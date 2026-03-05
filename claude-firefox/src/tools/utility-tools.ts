@@ -1,13 +1,31 @@
 import type { UnixSocketBridge } from "../unix-socket-bridge.js";
-import type { ToolDef } from "./index.js";
+import type { ToolDef, ToolRuntimeInfo } from "./index.js";
 import {
   getMemoriesForDomain,
   saveMemory as memSave,
   deleteMemory as memDelete,
 } from "../memory.js";
 
-export function utilityTools(bridge: UnixSocketBridge): ToolDef[] {
+export function utilityTools(bridge: UnixSocketBridge, runtime: ToolRuntimeInfo): ToolDef[] {
   return [
+    {
+      name: "bridge_status",
+      description: "Return Firefox bridge health and runtime paths for debugging.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+      handler: async () => {
+        return {
+          connected: bridge.isConnected(),
+          socketPath: bridge.getSocketPath(),
+          homeDir: runtime.homeDir,
+          captureUrl: `http://${runtime.captureHost}:${runtime.capturePort}/capture`,
+          queueDepth: bridge.getQueueDepth(),
+          requestTimeoutMs: bridge.getRequestTimeoutMs(),
+        };
+      },
+    },
     {
       name: "page_evaluate",
       description: "Execute JavaScript in the page context and return the result.",

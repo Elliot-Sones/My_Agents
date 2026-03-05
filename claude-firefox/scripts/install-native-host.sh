@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 NATIVE_HOST_SRC="$PROJECT_DIR/native-host/native-host.js"
-INSTALL_DIR="$HOME/.claude-firefox"
+INSTALL_DIR="${CLAUDE_FIREFOX_HOME:-$HOME/.claude-firefox}"
 INSTALLED_HOST="$INSTALL_DIR/native-host.js"
 WRAPPER="$INSTALL_DIR/run.sh"
 MANIFEST_DIR="$HOME/Library/Application Support/Mozilla/NativeMessagingHosts"
@@ -33,10 +33,18 @@ chmod +r "$INSTALLED_HOST"
 # Create a wrapper shell script that uses the absolute node path.
 # This is necessary because macOS GUI apps (Firefox) don't inherit
 # the user's shell PATH, so #!/usr/bin/env node won't find nvm/homebrew node.
+if [ -n "${CLAUDE_FIREFOX_HOME:-}" ]; then
+cat > "$WRAPPER" <<EOF
+#!/bin/bash
+export CLAUDE_FIREFOX_HOME="$CLAUDE_FIREFOX_HOME"
+exec "$NODE_BIN" "$INSTALLED_HOST"
+EOF
+else
 cat > "$WRAPPER" <<EOF
 #!/bin/bash
 exec "$NODE_BIN" "$INSTALLED_HOST"
 EOF
+fi
 chmod +x "$WRAPPER"
 
 # Write the manifest pointing to the wrapper
@@ -55,3 +63,6 @@ echo "  Installed: $INSTALL_DIR/"
 echo "  Manifest:  $MANIFEST_FILE"
 echo "  Wrapper:   $WRAPPER"
 echo "  Node:      $NODE_BIN"
+if [ -n "${CLAUDE_FIREFOX_HOME:-}" ]; then
+  echo "  Home dir:  $CLAUDE_FIREFOX_HOME"
+fi

@@ -2,22 +2,18 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { UnixSocketBridge } from "./unix-socket-bridge.js";
 import { registerTools } from "./tools/index.js";
-import { loadMemories, decayMemories } from "./memory.js";
+import { loadMemories, decayMemories, setMemoryPath } from "./memory.js";
 import { startCaptureServer } from "./capture-server.js";
+import { getRuntimeConfig } from "./runtime-config.js";
 import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from "fs";
-import { join } from "path";
-import { homedir } from "os";
 
-const PID_DIR = join(homedir(), ".claude-firefox");
-const PID_FILE = join(PID_DIR, "server.pid");
-
-function killStaleInstance(): void {
-  if (!existsSync(PID_FILE)) return;
+function killStaleInstance(pidFile: string): void {
+  if (!existsSync(pidFile)) return;
 
   try {
-    const oldPid = parseInt(readFileSync(PID_FILE, "utf8").trim(), 10);
+    const oldPid = parseInt(readFileSync(pidFile, "utf8").trim(), 10);
     if (isNaN(oldPid)) {
-      unlinkSync(PID_FILE);
+      unlinkSync(pidFile);
       return;
     }
 
@@ -52,33 +48,35 @@ function killStaleInstance(): void {
       // Process doesn't exist, clean up stale PID file
     }
 
-    unlinkSync(PID_FILE);
+    unlinkSync(pidFile);
   } catch {
     // PID file read/delete failed, continue anyway
   }
 }
 
-function writePidFile(): void {
-  mkdirSync(PID_DIR, { recursive: true });
-  writeFileSync(PID_FILE, String(process.pid), "utf8");
+function writePidFile(pidDir: string, pidFile: string): void {
+  mkdirSync(pidDir, { recursive: true });
+  writeFileSync(pidFile, String(process.pid), "utf8");
 }
 
-function removePidFile(): void {
+function removePidFile(pidFile: string): void {
   try {
-    unlinkSync(PID_FILE);
+    unlinkSync(pidFile);
   } catch {
     // Already gone
   }
 }
 
 async function main() {
+  const config = getRuntimeConfig();
   console.error("[main] Starting claude-firefox MCP server...");
 
   // Kill any stale instance before binding ports
-  killStaleInstance();
-  writePidFile();
+  killStaleInstance(config.pidFile);
+  writePidFile(config.homeDir, config.pidFile);
 
   // Load memories from disk
+  setMemoryPath(config.memoryFile);
   loadMemories();
   decayMemories();
 
@@ -88,11 +86,19 @@ async function main() {
     { capabilities: { tools: {} } }
   );
 
-  // Start capture HTTP server (port 7866)
-  startCaptureServer();
+  // Start capture HTTP server
+  startCaptureServer({
+    homeDir: config.homeDir,
+    captureFile: config.captureFile,
+    captureHost: config.captureHost,
+    capturePort: config.capturePort,
+  });
 
   // Start Unix socket bridge
-  const bridge = new UnixSocketBridge();
+  const bridge = new UnixSocketBridge({
+    socketPath: config.socketPath,
+    requestTimeoutMs: config.requestTimeoutMs,
+  });
   bridge.onConnected = () => {
     console.error("[main] Firefox extension connected");
   };
@@ -102,7 +108,12 @@ async function main() {
   bridge.start();
 
   // Register all tools
-  registerTools(server, bridge, null);
+  registerTools(server, bridge, {
+    homeDir: config.homeDir,
+    captureHost: config.captureHost,
+    capturePort: config.capturePort,
+    requestTimeoutMs: config.requestTimeoutMs,
+  });
 
   // Connect MCP server to stdio transport
   const transport = new StdioServerTransport();
@@ -112,7 +123,7 @@ async function main() {
   // Graceful shutdown
   const shutdown = () => {
     console.error("[main] Shutting down...");
-    removePidFile();
+    removePidFile(config.pidFile);
     bridge.stop();
     process.exit(0);
   };

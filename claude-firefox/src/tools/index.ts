@@ -17,16 +17,23 @@ export interface ToolDef {
   handler: (params: Record<string, unknown>) => Promise<unknown>;
 }
 
+export interface ToolRuntimeInfo {
+  homeDir: string;
+  captureHost: string;
+  capturePort: number;
+  requestTimeoutMs: number;
+}
+
 export function registerTools(
   server: Server,
   bridge: UnixSocketBridge,
-  _memory: unknown
+  runtime: ToolRuntimeInfo
 ): void {
   const allTools: ToolDef[] = [
     ...tabTools(bridge),
     ...pageTools(bridge),
     ...interactionTools(bridge),
-    ...utilityTools(bridge),
+    ...utilityTools(bridge, runtime),
   ];
 
   const toolMap = new Map<string, ToolDef>();

@@ -5,7 +5,8 @@ import { createConnection } from "net";
 import { join } from "path";
 import { homedir } from "os";
 
-const SOCKET_PATH = join(homedir(), ".claude-firefox", "bridge.sock");
+const bridgeHome = process.env.CLAUDE_FIREFOX_HOME || join(homedir(), ".claude-firefox");
+const SOCKET_PATH = join(bridgeHome, "bridge.sock");
 const RECONNECT_DELAY = 1000;
 
 let socket = null;
@@ -96,6 +97,7 @@ process.stdin.on("end", () => {
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 process.stderr.write("[native-host] Starting...\n");
+process.stderr.write(`[native-host] Socket path: ${SOCKET_PATH}\n`);
 
 process.on("SIGTERM", () => {
   process.stderr.write("[native-host] SIGTERM received, shutting down\n");

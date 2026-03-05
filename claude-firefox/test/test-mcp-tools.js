@@ -36,6 +36,9 @@ async function runTests() {
       return { action, params, mock: true };
     },
     isConnected: () => true,
+    getSocketPath: () => "/tmp/bridge.sock",
+    getQueueDepth: () => 0,
+    getRequestTimeoutMs: () => 60000,
   };
 
   // Create MCP server
@@ -45,7 +48,13 @@ async function runTests() {
   );
 
   // Register tools
-  registerTools(server, mockBridge, null);
+  const runtime = {
+    homeDir: "/tmp/claude-firefox",
+    captureHost: "127.0.0.1",
+    capturePort: 7866,
+    requestTimeoutMs: 60000,
+  };
+  registerTools(server, mockBridge, runtime);
 
   // Test 1: Verify tool count
   console.log("Test 1: Tool registration");
@@ -53,19 +62,20 @@ async function runTests() {
   // Since we can't easily introspect, we'll test via the handler map approach
   const expectedTools = [
     "tab_create", "tab_close", "tab_list", "tab_navigate", "tab_switch",
-    "navigate_and_snapshot", "page_snapshot", "page_screenshot", "page_content",
+    "page_snapshot", "page_screenshot", "page_content", "set_push_focus",
     "element_click", "click_and_wait", "element_type", "element_fill",
-    "form_fill", "form_fill_and_submit",
-    "page_evaluate", "console_read", "network_requests", "wait_for",
+    "form_fill", "form_fill_and_submit", "element_hover", "element_double_click",
+    "element_right_click", "key_press", "find", "element_drag",
+    "bridge_status", "page_evaluate", "console_read", "network_requests", "wait_for",
     "save_memory", "list_memories", "delete_memory",
   ];
-  assert(expectedTools.length === 22, `Expected 22 tools, got ${expectedTools.length}`);
+  assert(expectedTools.length === 29, `Expected 29 tools, got ${expectedTools.length}`);
 
   // Test 2: Test memory tools directly (these don't go through bridge)
   console.log("\nTest 2: Memory tools (save_memory)");
   // Import the utility tools directly
   const { utilityTools } = await import("../build/tools/utility-tools.js");
-  const uTools = utilityTools(mockBridge);
+  const uTools = utilityTools(mockBridge, runtime);
   const saveMemTool = uTools.find(t => t.name === "save_memory");
   assert(saveMemTool !== undefined, "save_memory tool exists");
 
@@ -108,10 +118,10 @@ async function runTests() {
   console.log("\nTest 7: Page tools dispatch");
   const { pageTools } = await import("../build/tools/page-tools.js");
   const pTools = pageTools(mockBridge);
-  const navSnapTool = pTools.find(t => t.name === "navigate_and_snapshot");
-  const navResult = await navSnapTool.handler({ tabId: 1, url: "https://example.com" });
-  assert(navResult.action === "navigate_and_snapshot", "navigate_and_snapshot dispatches correctly");
-  assert(navResult.params.filter === "interactive", "Default filter is 'interactive'");
+  const snapshotTool = pTools.find(t => t.name === "page_snapshot");
+  const snapshotResult = await snapshotTool.handler({ tabId: 1 });
+  assert(snapshotResult.action === "page_snapshot", "page_snapshot dispatches correctly");
+  assert(snapshotResult.params.filter === "interactive", "Default filter is 'interactive'");
 
   // Test 8: Interaction tools dispatch
   console.log("\nTest 8: Interaction tools dispatch");
@@ -141,7 +151,7 @@ async function runTests() {
     }
   }
   assert(allHaveSchemas, `All ${allTools.length} tools have valid input schemas`);
-  assert(allTools.length === 22, `Total tool count: ${allTools.length}`);
+  assert(allTools.length === 29, `Total tool count: ${allTools.length}`);
 
   console.log(`\n=== Results: ${passed} passed, ${failed} failed ===`);
   process.exit(failed > 0 ? 1 : 0);

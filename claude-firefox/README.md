@@ -2,7 +2,7 @@
 
 Firefox browser automation via the Model Context Protocol (MCP).
 
-This is the core MCP server that powers the browser automation agents in this repository. It provides 28 tools for navigating, clicking, typing, extracting content, and interacting with any website through Firefox.
+This is the core MCP server that powers the browser automation agents in this repository. It provides 29 tools for navigating, clicking, typing, extracting content, and interacting with any website through Firefox.
 
 ## Features
 
@@ -32,7 +32,7 @@ npm run build
 ### 3. Install the native host
 
 ```bash
-./install-native-host.sh
+./scripts/install-native-host.sh
 ```
 
 This registers the native messaging host so Firefox can communicate with the MCP server.
@@ -45,6 +45,31 @@ node build/index.js
 
 The server starts, listens on a Unix socket, and waits for the Firefox extension to connect.
 
+## Client-Agnostic MCP Setup (Codex or Claude)
+
+Use the same MCP server definition in either client:
+
+```json
+{
+  "mcpServers": {
+    "claude-firefox": {
+      "command": "node",
+      "args": ["/absolute/path/to/claude-firefox/build/index.js"],
+      "cwd": "/absolute/path/to/claude-firefox"
+    }
+  }
+}
+```
+
+Only the config file location changes per client. The server command and args stay the same.
+
+## Runtime Environment Variables
+
+- `CLAUDE_FIREFOX_HOME` (default `~/.claude-firefox`): home directory for PID, socket, memory, and capture files.
+- `CLAUDE_FIREFOX_CAPTURE_HOST` (default `127.0.0.1`): bind host for the capture endpoint.
+- `CLAUDE_FIREFOX_CAPTURE_PORT` (default `7866`): bind port for the capture endpoint.
+- `CLAUDE_FIREFOX_REQUEST_TIMEOUT_MS` (default `60000`, minimum `5000`): timeout for bridge requests.
+
 ## Tools
 
 | Category | Tools |
@@ -55,7 +80,14 @@ The server starts, listens on a Unix socket, and waits for the Firefox extension
 | **Keyboard** | `key_press` |
 | **Waiting** | `wait_for`, `click_and_wait` |
 | **Batch** | `batch_actions` |
-| **Advanced** | `find`, `page_evaluate`, `set_push_focus`, `clear_push_focus`, `network_requests` |
+| **Advanced** | `find`, `page_evaluate`, `set_push_focus`, `clear_push_focus`, `network_requests`, `bridge_status` |
+
+## Troubleshooting
+
+If tool calls time out, run `bridge_status` from your MCP client and confirm:
+- `connected: true`
+- `socketPath` matches your configured `CLAUDE_FIREFOX_HOME`
+- Firefox extension is loaded and native host is installed
 
 ## Benchmark
 

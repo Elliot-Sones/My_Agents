@@ -1,13 +1,8 @@
 import { createServer, Socket, Server } from "net";
 import { randomUUID } from "crypto";
 import { mkdirSync, unlinkSync } from "fs";
-import { join } from "path";
-import { homedir } from "os";
+import { dirname } from "path";
 import type { ToolRequest } from "./types.js";
-
-const SOCKET_DIR = join(homedir(), ".claude-firefox");
-export const SOCKET_PATH = join(SOCKET_DIR, "bridge.sock");
-const REQUEST_TIMEOUT = 60000;
 
 interface PendingRequest {
   resolve: (value: unknown) => void;
@@ -25,12 +20,19 @@ export interface TabTreeState {
   updatedAt: number;
 }
 
+export interface UnixSocketBridgeConfig {
+  socketPath: string;
+  requestTimeoutMs: number;
+}
+
 export class UnixSocketBridge {
   private server: Server | null = null;
   private client: Socket | null = null;
   private pending = new Map<string, PendingRequest>();
   private queue: ToolRequest[] = [];
   private buffer = "";
+  private readonly socketPath: string;
+  private readonly requestTimeoutMs: number;
 
   // Live tree cache — populated by extension pushes, read by page_snapshot
   private tabState = new Map<number, TabTreeState>();
@@ -38,9 +40,14 @@ export class UnixSocketBridge {
   public onConnected: (() => void) | null = null;
   public onDisconnected: (() => void) | null = null;
 
+  constructor(config: UnixSocketBridgeConfig) {
+    this.socketPath = config.socketPath;
+    this.requestTimeoutMs = config.requestTimeoutMs;
+  }
+
   start(): void {
-    mkdirSync(SOCKET_DIR, { recursive: true });
-    try { unlinkSync(SOCKET_PATH); } catch { /* no stale socket */ }
+    mkdirSync(dirname(this.socketPath), { recursive: true });
+    try { unlinkSync(this.socketPath); } catch { /* no stale socket */ }
 
     this.server = createServer((socket) => {
       console.error("[bridge] Native host connected");
@@ -78,8 +85,8 @@ export class UnixSocketBridge {
       console.error("[bridge] Server error:", err.message);
     });
 
-    this.server.listen(SOCKET_PATH, () => {
-      console.error(`[bridge] Unix socket listening at ${SOCKET_PATH}`);
+    this.server.listen(this.socketPath, () => {
+      console.error(`[bridge] Unix socket listening at ${this.socketPath}`);
     });
   }
 
@@ -153,8 +160,12 @@ export class UnixSocketBridge {
           this.pending.delete(id);
           const idx = this.queue.indexOf(request);
           if (idx !== -1) this.queue.splice(idx, 1);
-          reject(new Error("Request timed out (extension not connected)"));
-        }, REQUEST_TIMEOUT);
+          reject(
+            new Error(
+              `Extension not connected. Open Firefox, load the Claude Browser Bridge extension, install native host, and ensure socket path matches ${this.socketPath}`
+            )
+          );
+        }, this.requestTimeoutMs);
         this.pending.set(id, { resolve, reject, timer });
       });
     }
@@ -169,8 +180,12 @@ export class UnixSocketBridge {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(request.id);
-        reject(new Error(`Request timed out: ${request.action}`));
-      }, REQUEST_TIMEOUT);
+        reject(
+          new Error(
+            `Request timed out: ${request.action} (>${this.requestTimeoutMs}ms). Check Firefox extension/native host connectivity at ${this.socketPath}`
+          )
+        );
+      }, this.requestTimeoutMs);
       this.pending.set(request.id, { resolve, reject, timer });
       this.client!.write(JSON.stringify(request) + "\n");
     });
@@ -190,6 +205,18 @@ export class UnixSocketBridge {
     return this.client !== null && !this.client.destroyed;
   }
 
+  getQueueDepth(): number {
+    return this.queue.length;
+  }
+
+  getSocketPath(): string {
+    return this.socketPath;
+  }
+
+  getRequestTimeoutMs(): number {
+    return this.requestTimeoutMs;
+  }
+
   stop(): void {
     for (const [, pending] of this.pending) {
       clearTimeout(pending.timer);
@@ -205,6 +232,6 @@ export class UnixSocketBridge {
       this.server.close();
       this.server = null;
     }
-    try { unlinkSync(SOCKET_PATH); } catch { /* already gone */ }
+    try { unlinkSync(this.socketPath); } catch { /* already gone */ }
   }
 }

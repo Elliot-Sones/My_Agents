@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-CONFIG_DIR="$HOME/.claude-firefox"
+CONFIG_DIR="${CLAUDE_FIREFOX_HOME:-$HOME/.claude-firefox}"
 
 echo "=== Claude Firefox MCP - Install ==="
 echo
@@ -33,5 +33,5 @@ echo "  1. Open Firefox and go to about:debugging#/runtime/this-firefox"
 echo "  2. Click 'Load Temporary Add-on...'"
 echo "  3. Select: $PROJECT_DIR/extension/manifest.json"
 echo "  4. Click the extension icon and enter the secret above"
-echo "  5. Restart Claude Code so it picks up the new MCP server"
+echo "  5. Restart your MCP client (Codex or Claude) so it picks up the new MCP server"
 echo

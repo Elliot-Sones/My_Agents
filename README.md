@@ -25,7 +25,7 @@ The focus is on agents that solve actual problems — not toy demos. Every agent
 
 | Agent | Description | Status |
 |-------|-------------|--------|
-| [**claude-firefox**](./claude-firefox) | Firefox browser automation via MCP. Enriched accessibility tree, stable element refs, snapshot caching, 28 tools. | Available |
+| [**claude-firefox**](./claude-firefox) | Firefox browser automation via MCP. Enriched accessibility tree, stable element refs, snapshot caching, 29 tools. | Available |
 | [**research-agent**](./research-agent) | Multi-source research with LLM-powered evaluation. Papers, code, opinions, cross-validation, 18 tools. | Available |
 | *Web Monitor* | Track page changes and get alerts. | Planned |
 

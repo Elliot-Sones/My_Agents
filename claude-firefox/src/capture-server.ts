@@ -1,13 +1,15 @@
 import { createServer } from "http";
 import { writeFileSync, mkdirSync } from "fs";
-import { homedir } from "os";
-import { join } from "path";
 
-const CAPTURE_PORT = 7866;
-const captureDir = join(homedir(), ".claude-firefox");
+export interface CaptureServerConfig {
+  homeDir: string;
+  captureFile: string;
+  captureHost: string;
+  capturePort: number;
+}
 
-export function startCaptureServer() {
-  mkdirSync(captureDir, { recursive: true });
+export function startCaptureServer(config: CaptureServerConfig): void {
+  mkdirSync(config.homeDir, { recursive: true });
 
   const server = createServer((req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -28,7 +30,7 @@ export function startCaptureServer() {
           const data = JSON.parse(body);
           const timestamp = new Date().toISOString();
           const text = `URL: ${data.url}\nTitle: ${data.title}\nCaptured: ${timestamp}\n\n${data.content}`;
-          writeFileSync(join(captureDir, "page-context.txt"), text, "utf8");
+          writeFileSync(config.captureFile, text, "utf8");
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: true }));
         } catch (e) {
@@ -43,7 +45,19 @@ export function startCaptureServer() {
     res.end();
   });
 
-  server.listen(CAPTURE_PORT, "127.0.0.1", () => {
-    process.stderr.write(`[capture] HTTP capture server on port ${CAPTURE_PORT}\n`);
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE" || err.code === "EACCES" || err.code === "EPERM") {
+      process.stderr.write(
+        `[capture] Capture server disabled (${err.code}) at ${config.captureHost}:${config.capturePort}\n`
+      );
+      return;
+    }
+    process.stderr.write(`[capture] Capture server error: ${err.message}\n`);
+  });
+
+  server.listen(config.capturePort, config.captureHost, () => {
+    process.stderr.write(
+      `[capture] HTTP capture server on ${config.captureHost}:${config.capturePort}\n`
+    );
   });
 }

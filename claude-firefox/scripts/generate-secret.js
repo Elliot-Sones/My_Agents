@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 
-const configDir = join(homedir(), ".claude-firefox");
+const configDir = process.env.CLAUDE_FIREFOX_HOME || join(homedir(), ".claude-firefox");
 const secretPath = join(configDir, "secret.txt");
 const memoryPath = join(configDir, "memory.json");
 

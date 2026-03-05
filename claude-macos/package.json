@@ -1,0 +1,19 @@
+{
+  "name": "claude-macos-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for macOS automation via AppleScript, JXA, and native tools",
+  "type": "module",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node build/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

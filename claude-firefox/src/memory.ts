@@ -3,13 +3,13 @@ import { join, dirname } from "path";
 import { homedir } from "os";
 import { Memory, parseMemoryKey } from "./types.js";
 
-const MEMORY_PATH = join(homedir(), ".claude-firefox", "memory.json");
+let memoryPath = join(homedir(), ".claude-firefox", "memory.json");
 
 let memories: Record<string, Memory> = {};
 
 export function loadMemories(): Record<string, Memory> {
-  if (existsSync(MEMORY_PATH)) {
-    memories = JSON.parse(readFileSync(MEMORY_PATH, "utf-8"));
+  if (existsSync(memoryPath)) {
+    memories = JSON.parse(readFileSync(memoryPath, "utf-8"));
   } else {
     memories = {};
   }
@@ -17,11 +17,15 @@ export function loadMemories(): Record<string, Memory> {
 }
 
 export function saveMemories(): void {
-  const dir = dirname(MEMORY_PATH);
+  const dir = dirname(memoryPath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
-  writeFileSync(MEMORY_PATH, JSON.stringify(memories, null, 2));
+  writeFileSync(memoryPath, JSON.stringify(memories, null, 2));
+}
+
+export function setMemoryPath(path: string): void {
+  memoryPath = path;
 }
 
 export function getMemoriesForDomain(
